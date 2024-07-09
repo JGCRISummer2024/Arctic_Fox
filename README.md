@@ -1,2 +1,2 @@
-# Artic_Fox
+# Arctic_Fox
  High Latitude Soil Respiration

@@ -6,7 +6,7 @@ library(dplyr)
 srdb_hlf <- srdb %>%
   #ask about filter this gives pretty much only European data
   filter(Latitude >= 50 & Biome == c("Boreal", "Arctic", "Subarctic", "Tundra") & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  select(Country, Latitude, Longitude, Rs_annual)
+  select(Country, Latitude, Longitude, Rs_annual, MAT, Rs_growingseason, MAP)
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
   select(Country, Latitude, Longitude, Rs_annual, MAT, Rs_growingseason, MAP)

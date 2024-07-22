@@ -63,7 +63,7 @@ srdbPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
 #testing perc with high latitude set
 srdbhl_prec <- terra::extract(prec, srdb_hl[3:2])
 srdb_hl$MAP_wc <- rowSums(srdbhl_prec[-1])
-srdbhlTP <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+srdbhlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
   geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 

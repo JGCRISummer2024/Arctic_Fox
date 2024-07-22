@@ -15,9 +15,6 @@ test <- tribble(  ~place,  ~lon,         ~lat,
                   "Canada3", -99.940, 56.630)
 test$ID <- seq_len(nrow(test)) #adds an ID column
 
-#Download temperature data
-tavg <- worldclim_global("tavg", 10, "worldclim_data/")
-
 #testing tavg with a few data points
 testTemp <- terra::extract(tavg, test[2:3]) #extracts data from tavg for the coordinate pairs in columns 2 and 3
 test$MAT <- rowMeans(testTemp[-1]) #adds a MAT column and puts mean of each row from testTemp in it
@@ -25,27 +22,20 @@ testTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
   geom_point(data = test, mapping = aes(lon, lat, color = MAT)) #plot on a map color according to temperature
 
 #testing tavg with world data set
-srdb_temp <- terra::extract(tavg, srdb[15:14])
-srdb$MAT_wc <- rowMeans(srdb_temp[-1])
 srdbTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAT_wc)) + 
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
 
 #testing tavg with high latitude set
-srdbhl_temp <- terra::extract(tavg, srdb_hl[3:2])
-srdb_hl$MAT_wc <- rowMeans(srdbhl_temp[-1])
 srdbhlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
-  geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAT_wc)) +
+  geom_point(data = srdb_hlf, mapping = aes(Longitude, Latitude, color = MAT_wc)) +
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
 
 #Graph MAT by MAT_wc
 tempCheck <- ggplot(srdb, aes(MAT, MAT_wc)) + geom_point()
 tempCheckhl <- ggplot(srdb_hl, aes(MAT, MAT_wc)) + geom_point()
-
-#Download precipitation data
-prec <- worldclim_global("prec", 10, "worldclim_data/")
 
 #testing prec with a few data points
 testPrec <- terra::extract(prec, test[2:3]) 
@@ -54,15 +44,11 @@ testPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
   geom_point(data = test, mapping = aes(lon, lat, color = MAP)) 
 
 #testing prec with world srdb
-srdb_prec <- terra::extract(prec, srdb[15:14]) 
-srdb$MAP_wc <- rowSums(srdb_prec[-1])
 srdbPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 
   scale_color_gradientn(colors = rainbow(5))
 
 #testing perc with high latitude set
-srdbhl_prec <- terra::extract(prec, srdb_hl[3:2])
-srdb_hl$MAP_wc <- rowSums(srdbhl_prec[-1])
 srdbhlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
@@ -72,3 +58,7 @@ srdbhlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=l
 #Graph MAP by MAP_wc
 percCheck <- ggplot(srdb, aes(MAP, MAP_wc)) + geom_point()
 percCheckhl <- ggplot(srdb_hl, aes(MAP, MAP_wc)) + geom_point()
+
+#testing srad with a few data points
+testSrad <- terra::extract(srad, test[2:3])
+test$srad <- rowMeans(testSrad[-1])

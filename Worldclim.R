@@ -1,9 +1,9 @@
 library(geodata)
 library(terra)
 library(ggplot2)
+library(tibble)
 
 #Making test data
-library(tibble)
 test <- tribble(  ~place,  ~lon,         ~lat,
                   "JGCRI",    -76.92238, 38.97160,
                   "Thompson", -97.84862, 55.74706,
@@ -21,16 +21,16 @@ test$MAT <- rowMeans(testTemp[-1]) #adds a MAT column and puts mean of each row 
 testTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = test, mapping = aes(lon, lat, color = MAT)) #plot on a map color according to temperature
 
-#testing tavg with world data set
-srdbTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+#tavg with world data set
+wTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAT_wc)) + 
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
 
-#testing tavg with high latitude set
-srdbhlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+#tavg with high latitude set
+hlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
-  geom_point(data = srdb_hlf, mapping = aes(Longitude, Latitude, color = MAT_wc)) +
+  geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAT_wc)) +
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
 
 #Graph MAT by MAT_wc
@@ -44,12 +44,12 @@ testPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
   geom_point(data = test, mapping = aes(lon, lat, color = MAP)) 
 
 #testing prec with world srdb
-srdbPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+wPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 
   scale_color_gradientn(colors = rainbow(5))
 
 #testing perc with high latitude set
-srdbhlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+hlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
   geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 

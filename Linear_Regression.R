@@ -33,7 +33,7 @@ MAPrp <- ggplot(srdb_hl, aes(MAP_wc, Rs_annual)) +
 #High Latitude Data Rs_annual as a function of MAT_wc and MAP_wc
 #Explains 12.3% of variability in Rs_annual (from adjusted R^2)
 #This is actually slightly worse than the MAT only model
-rm4 <- lm(Rs_annual ~ MAT_wc + MAP_wc, data = srdb_hl)
+rm4 <- lm(Rs_annual ~ MAT_wc * MAP_wc, data = srdb_hl)
 summary(rm4)
 srdb_hl$TPmodel <- predict(rm4)
 TPRP <- ggplot(srdb_hl, aes(MAT_wc, Rs_annual, size = MAP_wc)) +
@@ -56,24 +56,30 @@ summary(rm5)
 rm6 <- lm(Rs_annual ~ Soil_drainage, data = srdb_hl)
 summary(rm6)
 
-#High Latitude Data Rs_annual as a function of MAT_wc and Soil_drainage
-#Explains 73.61% of variability in Rs_annual (from adjusted R^2)
-#I want to get quantitative soil moisture data and soil/SOM carbon content
-rm7 <- lm(Rs_annual ~ Soil_drainage + NPP + C_soilmineral + MAP_wc + MAT_wc, data = srdb_hl)
-summary(rm7)
-
 #High Latitude Data Rs_annual as a function of soil C:N (Soil_CN)
 #Explains 4.628% of variability in Rs_annual (from adjusted R^2)
-#Makes best model worse
-rm8 <- lm(Rs_annual ~ Soil_CN, data = srdb_hl)
-summary(rm8)
+rm7 <- lm(Rs_annual ~ Soil_CN, data = srdb_hl)
+summary(rm7)
 
 #High Latitude Data Rs_annual as a function of soil net primary production (NPP)
 #Explains 49.38% of variability in Rs_annual (from adjusted R^2)
-rm9 <- lm(Rs_annual ~ NPP, data = srdb_hl)
-summary(rm9)
+rm8 <- lm(Rs_annual ~ NPP, data = srdb_hl)
+summary(rm8)
 
 #High Latitude Data Rs_annual as a function of carbon in soil organic matter (C_soilmineral)
 #Explains 11.76% of variability in Rs_annual (from adjusted R^2)
-rm10 <- lm(Rs_annual ~ C_soilmineral, data = srdb_hl)
+rm9 <- lm(Rs_annual ~ C_soilmineral, data = srdb_hl)
+summary(rm9)
+
+#High Latitude Data Rs_annual as a function of organic carbon storage (OCS)
+#Explains 1.541% of variability in Rs_annual (from adjusted R^2)
+rm10 <- lm(Rs_annual ~ OCS, data = srdb_hl)
 summary(rm10)
+
+#High Latitude Data Rs_annual as a function of MAT_wc and Soil_drainage
+#Explains 73.92% of variability in Rs_annual (from adjusted R^2)
+#I want soil drainage data (Soil_drainage only classifies as dry, mixed, and wet)
+#I want soil/SOM carbon content (C_soilmineral has lots of missing data)
+#I want NPP or similar plant productivity data (built in NPP has lots of missing data)
+rmBest <- lm(Rs_annual ~ Soil_drainage + NPP + C_soilmineral + MAP_wc + MAT_wc + srad, data = srdb_hl)
+summary(rmBest)

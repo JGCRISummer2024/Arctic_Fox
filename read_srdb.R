@@ -3,14 +3,19 @@ library(dplyr)
 library(ggplot2)
 library(maps)
 library(mapproj)
+library(raster)
 
 #Read in soil respiration data
 srdb <- read.csv("srdb-data.csv")
+srdb <- srdb %>% filter(!is.na(Longitude) & !is.na(Latitude))
 
 #Get worldclim data
 tavg <- worldclim_global("tavg", 10, "worldclim_data/")
 prec <- worldclim_global("prec", 10, "worldclim_data/")
 srad <- worldclim_global("srad", 10, "worldclim_data/")
+
+#Get SoilGrids data
+soilgrids <- raster("ocs_0-30cm_mean.tif")
 
 #Combine Data
 srdb_temp <- terra::extract(tavg, srdb[15:14])
@@ -23,7 +28,7 @@ srdb$srad <- rowMeans(srdb_srad[-1])
 #Filters for only high latitude data and chooses columns to focus on
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & MAT_wc <= 3 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral)
+  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral)
 
 # Sanity check - quickly plot the data colored by country
 p <- ggplot(srdb_hl, aes(Longitude, Latitude, color = Country)) + geom_point()

@@ -28,7 +28,7 @@ srdb$srad <- rowMeans(srdb_srad[-1])
 #Filters for only high latitude data and chooses columns to focus on
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & MAT_wc <= 3 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral)
+  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, modis)
 
 # Sanity check - quickly plot the data colored by country
 p <- ggplot(srdb_hl, aes(Longitude, Latitude, color = Country)) + geom_point()
@@ -57,7 +57,7 @@ mapvrsg <- ggplot(srdb_hl, aes(MAP, Rs_growingseason)) + geom_point() + geom_smo
 #Circumpolar annual respiration map
 RsMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
-  scale_y_continuous(breaks = seq(30, 90, by = 5), labels = NULL) + #lim = c(40, 90) zooms in but makes edges messy
+  scale_y_continuous(breaks = seq(30, 90, by = 5), labels = NULL, lim = c(40, 90)) + #lim = c(40, 90) zooms in but makes edges messy
   geom_point(srdb_hl, mapping = aes(Longitude, Latitude, color = Rs_annual), size = 1) +
   scale_color_gradient(high = c("purple"), low = c("yellow", "salmon")) +
   xlab("") +

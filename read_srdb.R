@@ -17,6 +17,10 @@ srad <- worldclim_global("srad", 10, "worldclim_data/")
 #Get SoilGrids data
 soilgrids <- raster("ocs_0-30cm_mean.tif")
 
+#Get MODIS data
+modis <- terra::rast("MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800.TIFF")
+modis_clamp <- terra::clamp(modis, lower=1, upper=254, values=FALSE)
+
 #Combine Data
 srdb_temp <- terra::extract(tavg, srdb[15:14])
 srdb$MAT_wc <- rowMeans(srdb_temp[-1])
@@ -24,6 +28,8 @@ srdb_prec <- terra::extract(prec, srdb[15:14])
 srdb$MAP_wc <- rowSums(srdb_prec[-1])
 srdb_srad <- terra::extract(srad, srdb[15:14])
 srdb$srad <- rowMeans(srdb_srad[-1])
+srdb_modis <- terra::extract(modis_clamp, srdb[15:14])
+srdb$modis <- srdb_modis$`MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800` * (1950/254) + 50
 
 #Filters for only high latitude data and chooses columns to focus on
 srdb_hl <- srdb %>% 
@@ -65,3 +71,6 @@ RsMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat,
   theme(panel.grid.major = element_line(linewidth = 0.25, linetype = 'dashed', color = "darkgrey"), axis.ticks=element_blank()) +
   ggtitle("Annual Carbon Flux from Soil Respiration") +
   labs(color = "Annual Rs (g C m^-2)")
+
+#Normal distribution of srdb_hl
+srdbhl_sqrt <- ggplot(srdb_hl, aes(sqrt(Rs_annual))) + geom_histogram()

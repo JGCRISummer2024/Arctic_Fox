@@ -34,7 +34,7 @@ srdb$modis <- srdb_modis$`MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800` * (1950/254) 
 #Filters for only high latitude data and chooses columns to focus on
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & MAT_wc <= 3 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, modis)
+  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, ANPP, modis)
 
 # Sanity check - quickly plot the data colored by country
 p <- ggplot(srdb_hl, aes(Longitude, Latitude, color = Country)) + geom_point()
@@ -73,4 +73,7 @@ RsMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat,
   labs(color = "Annual Rs (g C m^-2)")
 
 #Normal distribution of srdb_hl
+srdbhl_norm <- ggplot(srdb_hl, aes(Rs_annual)) + geom_histogram()
 srdbhl_sqrt <- ggplot(srdb_hl, aes(sqrt(Rs_annual))) + geom_histogram()
+shapiro.test(srdb_hl$Rs_annual) #p-value = 3.336e-06 
+shapiro.test(sqrt(srdb_hl$Rs_annual)) #p-value = 0.03656 still not quite a normal distribution

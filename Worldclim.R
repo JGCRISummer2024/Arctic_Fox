@@ -1,19 +1,6 @@
 library(geodata)
 library(terra)
 library(ggplot2)
-library(tibble)
-
-#Making test data
-test <- tribble(  ~place,  ~lon,         ~lat,
-                  "JGCRI",    -76.92238, 38.97160,
-                  "Thompson", -97.84862, 55.74706,
-                  "Fes",      -5.01007,  34.03614,
-                  "Lima",     -77.03086, -12.04545,
-                  "Estonia", 27.25, 58.250,
-                  "Canada", -99.940, 56.630,
-                  "Canada2", -99.940, 56.630,
-                  "Canada3", -99.940, 56.630)
-test$ID <- seq_len(nrow(test)) #adds an ID column
 
 #testing tavg with a few data points
 testTemp <- terra::extract(tavg, test[2:3]) #extracts data from tavg for the coordinate pairs in columns 2 and 3

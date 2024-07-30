@@ -1,5 +1,4 @@
 #Trying a linear regression model
-library(dplyr)
 
 #Trying with test data set
 test$lrm <- c(3, 7, 8, 14, 14, 19, 22, 23)
@@ -78,15 +77,22 @@ summary(rm10)
 ggplot(srdb_hl, aes(OCS, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
 #High Latitude Data Rs_annual as a function of MODIS NPP
-#Explains 11.91% of variability in Rs_annual (from adjusted R^2)
+#Explains 7.325% of variability in Rs_annual (from adjusted R^2)
 rm10 <- lm(Rs_annual ~ modis, data = srdb_hl)
 summary(rm10)
 ggplot(srdb_hl, aes(modis, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
-#High Latitude Data Rs_annual as a function of MAT_wc and Soil_drainage
-#Explains 18.06% of variability in Rs_annual (from adjusted R^2)
-#I want soil drainage data (Soil_drainage only classifies as dry, mixed, and wet)
-#I want soil/SOM carbon content (C_soilmineral has lots of missing data)
-#I want NPP or similar plant productivity data (built in NPP has lots of missing data)
-rmBest <- lm(Rs_annual ~ modis + MAT_wc + srad, data = srdb_hl)
+#High Latitude Data Rs_annual as a function of ANPP (should be good proxy for modis NPP)
+#Explains 10.68% of variability in Rs_annual (from adjusted R^2)
+rm11 <- lm(Rs_annual ~ ANPP, data = srdb_hl)
+summary(rm11)
+
+#High Latitude Data Rs_annual as a function of permafrost
+#Explains 6.84% of variability in Rs_annual (from adjusted R^2)
+rm12 <- lm(Rs_annual ~ permafrost, data = srdb_hl)
+summary(rm12)
+
+#High Latitude Data Rs_annual as a function of mutiple variables
+#Explains 63.47% of variability in Rs_annual (from adjusted R^2)
+rmBest <- lm(Rs_annual ~ NPP + MAT_wc + MAP_wc + OCS + ANPP, data = srdb_hl)
 summary(rmBest)

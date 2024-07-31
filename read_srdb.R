@@ -20,6 +20,8 @@ modis <- terra::rast("MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800.TIFF")
 modis_clamp <- terra::clamp(modis, lower=1, upper=254, values=FALSE)
 #Permafrost
 permafrost <- terra::rast("PF_baseline.tif")
+#Peatlands
+peatland <- terra::rast("Peat-ML_global_peatland_extent.nc")
 
 ##Combine Data
 #WorldClim
@@ -36,11 +38,14 @@ srdb$modis <- srdb_modis$`MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800` * (1950/254) 
 srdb_permafrost <- terra::extract(permafrost, srdb[15:14])
 srdb$permafrost <- srdb_permafrost$PF_baseline
 srdb$permafrost[is.na(srdb$permafrost[])] <- 0 #set NA values (which mean no permafrost) to 0
+#Peatlands
+srdbPeat <- terra::extract(peatland, srdb[15:14])
+srdb$peatland <- srdbPeat$PEATLAND_P
 
 #Filters for only cold high latitudes and chooses columns to focus on
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & MAT_wc <= 3 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, ANPP, modis, permafrost)
+  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, ANPP, modis, permafrost, peatland)
 
 #Combine srdb_hl with SoilGrids OCS (combining with full srdb takes way too long so I am only connecting to the high latitude set)
 x_points <- SpatialPoints(srdb_hl[3:2], proj4string = CRS("+proj=longlat + datum=WGS84"))

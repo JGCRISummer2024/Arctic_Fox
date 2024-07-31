@@ -1,98 +1,97 @@
-#Trying a linear regression model
+#Linear regression models
 
-#Trying with test data set
-test$lrm <- c(3, 7, 8, 14, 14, 19, 22, 23)
-rm1 <- lm(lrm ~ ID, data = test)
-summary(rm1)
-test$model <- predict(rm1)
-testRP <- ggplot(test, aes(ID, lrm)) +
-    geom_point() + 
-    geom_line(mapping = aes(y = model), linetype = 2, color = "blue")
-
-#High Latitude Data Rs_annual as a function of MAT_wc
-#Explains 12.13% of variability in Rs_annual (from adjusted R^2)
-srdb_hl <- srdb_hl %>% filter(!is.na(MAT_wc))
-rm2 <- lm(Rs_annual ~ MAT_wc, data = srdb_hl)
-summary(rm2)
-srdb_hl$MATmodel <- predict(rm2)
-MATrp <- ggplot(srdb_hl, aes(MAT_wc, Rs_annual)) +
-  geom_point() + 
-  geom_line(mapping = aes(y = MATmodel), color = "blue", linewidth = 1)
-
-#High Latitude Data Rs_annual as a function of MAP_wc
-#Explains 0.2911% of variability in Rs_annual (from adjusted R^2)
-srdb_hl <- srdb_hl %>% filter(!is.na(MAP_wc))
-rm3 <- lm(Rs_annual ~ MAP_wc, data = srdb_hl)
-summary(rm3)
-srdb_hl$MAPmodel <- predict(rm3)
-MAPrp <- ggplot(srdb_hl, aes(MAP_wc, Rs_annual)) +
-  geom_point() + 
-  geom_line(mapping = aes(y = MAPmodel), color = "blue", linewidth = 1)
-
-#High Latitude Data Rs_annual as a function of MAT_wc and MAP_wc
-#Explains 14.22% of variability in Rs_annual (from adjusted R^2)
-#This is actually slightly worse than the MAT only model
-rm4 <- lm(Rs_annual ~ MAT_wc + MAP_wc, data = srdb_hl)
-summary(rm4)
-srdb_hl$TPmodel <- predict(rm4)
-TPRP <- ggplot(srdb_hl, aes(MAT_wc, Rs_annual, size = MAP_wc)) +
-  geom_point() + 
-  geom_line(mapping = aes(y = TPmodel), color = "blue", linewidth = 1)
-
-#Plot residuals
-MATres <- ggplot(srdb_hl, aes(MATmodel, Rs_annual-MATmodel)) +
-  geom_point()
-MAPres <- ggplot(srdb_hl, aes(MAPmodel, Rs_annual-MAPmodel)) +
+#MAT_wc
+#13.06%
+rm_MAT <- lm(sqrt(Rs_annual) ~ MAT_wc, data = srdb_hl)
+summary(rmMAT)
+res_MAT <- ggplot(srdb_hl, aes(MATmodel, Rs_annual-MATmodel)) +
   geom_point()
 
-#High Latitude Data Rs_annual as a function of srad
-#Explains 5.842% of variability in Rs_annual (from adjusted R^2)
-rm5 <- lm(Rs_annual ~ srad, data = srdb_hl)
-summary(rm5)
+#MAP_wc
+#0.1734%
+rm_MAP <- lm(sqrt(Rs_annual) ~ MAP_wc, data = srdb_hl)
+summary(rmMAP)
+res_MAP <- ggplot(srdb_hl, aes(MAPmodel, Rs_annual-MAPmodel)) +
+  geom_point()
 
-#High Latitude Data Rs_annual as a function of Soil_drainage
-#Explains 13% of variability in Rs_annual (from adjusted R^2)
-rm6 <- lm(Rs_annual ~ Soil_drainage, data = srdb_hl)
-summary(rm6)
+#srad (solar radiation)
+#5.747%
+rm_srad <- lm(sqrt(Rs_annual) ~ srad, data = srdb_hl)
+summary(rm_srad)
 
-#High Latitude Data Rs_annual as a function of soil C:N (Soil_CN)
-#Explains -3.152% of variability in Rs_annual (from adjusted R^2)
-rm7 <- lm(Rs_annual ~ Soil_CN, data = srdb_hl)
-summary(rm7)
+#Soil_CN (C:N)
+#-1.894%
+rm_CN <- lm(sqrt(Rs_annual) ~ Soil_CN, data = srdb_hl)
+summary(rm_CN)
 
-#High Latitude Data Rs_annual as a function of soil net primary production (NPP)
-#Explains 29.69% of variability in Rs_annual (from adjusted R^2)
-rm8 <- lm(Rs_annual ~ NPP, data = srdb_hl)
-summary(rm8)
+#C_soilmineral (carbon in soil organic matter)
+#-1.283%
+rm_C <- lm(sqrt(Rs_annual) ~ C_soilmineral, data = srdb_hl)
+summary(rm_C)
 
-#High Latitude Data Rs_annual as a function of carbon in soil organic matter (C_soilmineral)
-#Explains -0.6379% of variability in Rs_annual (from adjusted R^2)
-rm9 <- lm(Rs_annual ~ C_soilmineral, data = srdb_hl)
-summary(rm9)
-
-#High Latitude Data Rs_annual as a function of organic carbon storage (OCS)
-#Explains 1.541% of variability in Rs_annual (from adjusted R^2)
-rm10 <- lm(Rs_annual ~ OCS, data = srdb_hl)
-summary(rm10)
+#OCS (organic carbon storage)
+#1.481%
+rm_OCS <- lm(sqrt(Rs_annual) ~ OCS, data = srdb_hl)
+summary(rm_OCS)
 ggplot(srdb_hl, aes(OCS, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
-#High Latitude Data Rs_annual as a function of MODIS NPP
-#Explains 7.325% of variability in Rs_annual (from adjusted R^2)
-rm10 <- lm(Rs_annual ~ modis, data = srdb_hl)
-summary(rm10)
+#NPP (net primary production)
+#31.61%
+rm_NPP <- lm(sqrt(Rs_annual) ~ NPP, data = srdb_hl)
+summary(rm_NPP)
+
+#MODIS NPP
+#7.788%
+rm_modis <- lm(sqrt(Rs_annual) ~ modis, data = srdb_hl)
+summary(rm_modis)
 ggplot(srdb_hl, aes(modis, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
-#High Latitude Data Rs_annual as a function of ANPP (should be good proxy for modis NPP)
-#Explains 10.68% of variability in Rs_annual (from adjusted R^2)
-rm11 <- lm(Rs_annual ~ ANPP, data = srdb_hl)
-summary(rm11)
+#ANPP (above ground net primary production)
+#12.9%
+#This is more effective than MODIS but a higher p-value likely do to MODIS having more data
+rm_ANPP <- lm(sqrt(Rs_annual) ~ ANPP, data = srdb_hl)
+summary(rm_ANPP)
 
-#High Latitude Data Rs_annual as a function of permafrost
-#Explains 6.84% of variability in Rs_annual (from adjusted R^2)
-rm12 <- lm(Rs_annual ~ permafrost, data = srdb_hl)
-summary(rm12)
+#Permafrost
+#7.494%
+rm_perma <- lm(sqrt(Rs_annual) ~ permafrost, data = srdb_hl)
+summary(rm_perma)
 
-#High Latitude Data Rs_annual as a function of mutiple variables
-#Explains 63.47% of variability in Rs_annual (from adjusted R^2)
-rmBest <- lm(Rs_annual ~ NPP + MAT_wc + MAP_wc + OCS + ANPP, data = srdb_hl)
-summary(rmBest)
+#Soil_drainage
+#14.02%
+rm_SD <- lm(sqrt(Rs_annual) ~ Soil_drainage, data = srdb_hl)
+summary(rm_SD)
+
+#Peatlands
+#-0.4264%
+rm_peat <- lm(sqrt(Rs_annual) ~ peatland, data = srdb_hl)
+summary(rm_peat)
+ggplot(srdb_hl, aes(peatland, Rs_annual)) + geom_point() + geom_smooth(method = lm)
+
+#MAT_wc and MAP_wc
+#15.76%
+rm_TP <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc, data = srdb_hl)
+summary(rmTP)
+
+#Multiple variables best model (assume no interaction)
+#71.84%
+rm_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_drainage + permafrost + srad, data = srdb_hl)
+summary(rm_best)
+#this decided to be mean and stop working
+srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na(Soil_drainage))
+srdb_hlf$bestModel <- predict(rm_best)
+best_rp <- ggplot(srdb_hlf, aes(NPP, Rs_annual)) +
+  geom_point() + 
+  geom_line(mapping = aes(y = bestModel), color = "blue", linewidth = 1)
+res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
+  geom_point()
+
+#Multiple variables not including any built in srdb data (assume no interaction)
+#20.31%
+rm_ex <- lm(sqrt(Rs_annual) ~  MAT_wc + MAP_wc + OCS + permafrost + modis + srad, data = srdb_hl)
+summary(rm_ex)
+
+#Multiple variables with interaction
+#70.62%
+rm_int <- lm(sqrt(Rs_annual) ~ (MAT_wc * MAP_wc) + (NPP * ANPP) + OCS + permafrost + Soil_drainage, data = srdb_hl)
+summary(rm_int)

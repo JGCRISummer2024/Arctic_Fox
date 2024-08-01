@@ -1,18 +1,3 @@
-library(tibble)
-library(ggplot2)
-
-#Test data
-test <- tribble(  ~place,  ~lon,         ~lat,
-                  "JGCRI",    -76.92238, 38.97160,
-                  "Thompson", -97.84862, 55.74706,
-                  "Fes",      -5.01007,  34.03614,
-                  "Lima",     -77.03086, -12.04545,
-                  "Estonia", 27.25, 58.250,
-                  "Canada", -99.940, 56.630,
-                  "Canada2", -99.940, 56.630,
-                  "Canada3", -99.940, 56.630)
-test$ID <- seq_len(nrow(test)) #adds an ID column
-
 ##MODIS
 #World map
 modisMap <- ggplot() + 
@@ -23,7 +8,12 @@ plot(modis)
 #Built in ANPP vs MODIS
 modisCheck <- ggplot(srdb, aes(ANPP, modis)) + geom_point() + geom_smooth() + geom_abline()
 modisCheckhl <- ggplot(srdb_hl, aes(ANPP, modis)) + geom_point() + geom_smooth() + geom_abline()
-
+#0.5 vs 0.1
+modis.5 <- terra::rast("MOD17A3H_Y_NPP_2023-01-01_rgb_720x360.TIFF")
+modis_clamp.5 <- terra::clamp(modis.5, lower=1, upper=254, values=FALSE)
+srdb_modis.5 <- terra::extract(modis_clamp.5, srdb[15:14])
+srdb$modis.5 <- srdb_modis.5$`MOD17A3H_Y_NPP_2023-01-01_rgb_720x360` * (1950/254) + 50 #scale data
+ggplot(srdb, aes(modis, modis.5)) + geom_point() + geom_abline()
 
 ##Permafrost
 #World map

@@ -3,16 +3,26 @@
 #MAT_wc
 #13.06%
 rm_MAT <- lm(sqrt(Rs_annual) ~ MAT_wc, data = srdb_hl)
-summary(rmMAT)
+summary(rm_MAT)
 res_MAT <- ggplot(srdb_hl, aes(MATmodel, Rs_annual-MATmodel)) +
   geom_point()
+
+#MAT SRDB
+#4.241%
+rm_MAT2 <- lm(sqrt(Rs_annual) ~ MAT, data = srdb_hl)
+summary(rm_MAT2)
 
 #MAP_wc
 #0.1734%
 rm_MAP <- lm(sqrt(Rs_annual) ~ MAP_wc, data = srdb_hl)
-summary(rmMAP)
+summary(rm_MAP)
 res_MAP <- ggplot(srdb_hl, aes(MAPmodel, Rs_annual-MAPmodel)) +
   geom_point()
+
+#MAT_wc
+#-0.5518
+rm_MAP2 <- lm(sqrt(Rs_annual) ~ MAP, data = srdb_hl)
+summary(rm_MAP2)
 
 #srad (solar radiation)
 #5.747%
@@ -79,19 +89,35 @@ rm_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_draina
 summary(rm_best)
 #this decided to be mean and stop working
 srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na(Soil_drainage))
-srdb_hlf$bestModel <- predict(rm_best)
+srdb_hlf$bestModel <- predict(rm_best) ^2
 best_rp <- ggplot(srdb_hlf, aes(NPP, Rs_annual)) +
   geom_point() + 
   geom_line(mapping = aes(y = bestModel), color = "blue", linewidth = 1)
+best_rp2 <- ggplot(srdb_hlf, aes(Rs_annual, bestModel)) + geom_point() + geom_abline()
 res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
   geom_point()
 
-#Multiple variables not including any built in srdb data (assume no interaction)
-#20.31%
-rm_ex <- lm(sqrt(Rs_annual) ~  MAT_wc + MAP_wc + OCS + permafrost + modis + srad, data = srdb_hl)
-summary(rm_ex)
+#Multiple variables not including built in srdb NPP (assume no interaction)
+#26.05
+rm_rem <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc + OCS + permafrost + modis + srad + Soil_drainage, data = srdb_hl)
+summary(rm_rem)
+srdb_hlf2 <- filter(srdb_hl, !is.na(MAT_wc) & !is.na(MAP_wc) & !is.na(OCS) & !is.na(Soil_drainage) & !is.na(modis))
+srdb_hlf2$model <- predict(rm_rem) ^2
+rp_rem <- ggplot(srdb_hlf2, aes(Rs_annual, model)) + geom_point() + geom_abline()
+res_rem <- ggplot(srdb_hlf2, aes(model, Rs_annual-model)) +
+  geom_point()
+
+#Only on site data
+#55.43%
+rm_on <- lm(sqrt(Rs_annual) ~ MAT + MAP + NPP + Soil_drainage + ANPP + Soil_drainage, data = srdb_hl)
+summary(rm_on)
 
 #Multiple variables with interaction
 #70.62%
 rm_int <- lm(sqrt(Rs_annual) ~ (MAT_wc * MAP_wc) + (NPP * ANPP) + OCS + permafrost + Soil_drainage, data = srdb_hl)
 summary(rm_int)
+
+
+#Info on important models
+Anova(rm_best)
+Anova(rm_rem)

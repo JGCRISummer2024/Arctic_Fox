@@ -3,6 +3,7 @@ library(dplyr)
 library(ggplot2)
 library(maps)
 library(raster)
+library(car)
 
 #### Get data ####
 

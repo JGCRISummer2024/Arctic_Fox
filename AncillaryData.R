@@ -45,10 +45,22 @@ wTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, g
 hlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
-  geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAT_wc)) +
-  scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
+  xlab("") +
+  ylab("")+
+  geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAT_wc), size = 1) +
+  scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red")) +
+  ggtitle("Mean Annual Temperature") +
+  theme(panel.grid.major = element_line(linewidth = 0.25, linetype = 'dashed', color = "darkgrey"), axis.ticks=element_blank()) +
+  labs(color = "Degrees Celsius")
+  
 #Graph MAT by MAT_wc
-tempCheck <- ggplot(srdb, aes(MAT, MAT_wc)) + geom_point() + geom_abline()
+tempCheck <- ggplot(srdb, aes(MAT, MAT_wc)) + 
+  geom_point() + 
+  geom_point(data = srdb_hl, mapping = aes(MAT, MAT_wc), color="cyan") + 
+  geom_abline() +
+  xlab("Mean Annual Temperature SRDB") +
+  ylab("Mean Annual Temperature WorldClim") +
+  ggtitle("SRDB Temperature vs WorldClim Temperature")
 tempCheckhl <- ggplot(srdb_hl, aes(MAT, MAT_wc)) + geom_point() + geom_abline()
 
 ##MAP/prec
@@ -71,7 +83,7 @@ sradMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=la
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
 
 ##SoilGrids
-hlOSC <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+hlOCS <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
   geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = OCS)) + 

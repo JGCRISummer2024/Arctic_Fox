@@ -6,6 +6,7 @@ rm_MAT <- lm(sqrt(Rs_annual) ~ MAT_wc, data = srdb_hl)
 summary(rm_MAT)
 res_MAT <- ggplot(srdb_hl, aes(MATmodel, Rs_annual-MATmodel)) +
   geom_point()
+ggplot(srdb_hl, aes(MAT_wc, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
 #MAT SRDB
 #4.241%
@@ -49,6 +50,7 @@ ggplot(srdb_hl, aes(OCS, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 #31.61%
 rm_NPP <- lm(sqrt(Rs_annual) ~ NPP, data = srdb_hl)
 summary(rm_NPP)
+ggplot(srdb_hl, aes(NPP, Rs_annual)) + geom_point() + geom_smooth(method = lm)
 
 #MODIS NPP
 #7.788%
@@ -120,7 +122,12 @@ srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na
 rm_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_best)
 srdb_hlf$bestModel <- predict(rm_best) ^2
-best_rp <- ggplot(srdb_hlf, aes(Rs_annual, bestModel)) + geom_point() + geom_abline()
+best_rp <- ggplot(srdb_hlf, aes(Rs_annual, bestModel)) + 
+  geom_point() + 
+  xlab("Actual Annual Rs") +
+  ylab("Model Estimate") +
+  ggtitle("Best Model") +
+  geom_abline()
 res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
   geom_point()
 

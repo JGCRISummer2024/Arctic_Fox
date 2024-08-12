@@ -6,7 +6,13 @@ modisMap <- ggplot() +
   scale_color_gradient(low = "white", high = "darkgreen")
 plot(modis)
 #Built in ANPP vs MODIS
-modisCheck <- ggplot(srdb, aes(ANPP, modis)) + geom_point() + geom_abline()
+modisCheck <- ggplot(srdb, aes(ANPP, modis)) + 
+  geom_point() + 
+  geom_point(srdb_hl, mapping = aes(ANPP, modis), color = "cyan") +
+  geom_abline() +
+  xlab("SRDB ANPP") +
+  ylab("MODIS NPP") +
+  ggtitle("On Site ANPP vs MODIS")
 modisCheckhl <- ggplot(srdb_hl, aes(ANPP, modis)) + geom_point() + geom_abline()
 #0.5 vs 0.1
 modis.5 <- terra::rast("MOD17A3H_Y_NPP_2023-01-01_rgb_720x360.TIFF")

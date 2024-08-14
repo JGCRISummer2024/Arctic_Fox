@@ -4,6 +4,7 @@ library(ggplot2)
 library(maps)
 library(raster)
 library(car)
+library(caret)
 
 #### Get data ####
 

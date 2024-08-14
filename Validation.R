@@ -1,4 +1,3 @@
-library(caret)
 #Validation of Model
 #k-fold validation
 
@@ -19,22 +18,31 @@ for(i in 1:30){
 result_best <- bind_rows(result_best)
 val_best <- colMeans(result_best)
 
-##rm remote
-result_rem <- list()
+##rm remote MODIS
+result_sat <- list()
 for(i in 1:30){
   set.seed(i)
-  rand_rem <- createDataPartition(srdbhl_sat$Rs_annual, p = 0.75, list = FALSE)
-  train_rem <- srdbhl_sat[rand_rem,]
-  check_rem <- srdbhl_sat[-rand_rem,]
-  valMod_rem <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc + OCS + permafrost + modis + srad + Soil_drainage, data = train_rem)
-  guess_rem <- predict(valMod_rem, check_rem)
-  go_rem <- data.frame(R2 = R2(guess_rem, check_rem$Rs_annual),
-                        RMSE = RMSE(guess_rem, check_rem$Rs_annual),
-                        MAE = MAE(guess_rem, check_rem$Rs_annual))
-  result_rem[[i]] <- data.frame(go_rem)
+  rand_sat <- createDataPartition(srdbhl_sat$Rs_annual, p = 0.75, list = FALSE)
+  train_sat <- srdbhl_sat[rand_sat,]
+  check_sat <- srdbhl_sat[-rand_sat,]
+  valMod_sat <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + modis + srad, data = train_sat)
+  guess_sat <- predict(valMod_sat, check_sat)
+  go_sat <- data.frame(R2 = R2(guess_sat, check_sat$Rs_annual),
+                        RMSE = RMSE(guess_sat, check_sat$Rs_annual),
+                        MAE = MAE(guess_sat, check_sat$Rs_annual))
+  result_sat[[i]] <- data.frame(go_sat)
+  #Plot use seed 13 because its closest to average
+  if(i == 14){
+    train_sat$valMod_sat <- predict(valMod_sat) ^ 2
+    check_sat$guess_sat <- guess_sat ^ 2
+    valPlot_sat <- ggplot(train_sat, aes(Rs_annual, valMod_sat)) +
+      geom_point() +
+      geom_point(check_sat, mapping = aes(Rs_annual, guess_sat), color="red") +
+      geom_abline()
+  }
 }
-result_rem <- bind_rows(result_rem)
-val_rem <- colMeans(result_rem)
+result_sat <- bind_rows(result_sat)
+val_sat <- colMeans(result_sat)
 
 ##rm on site ANPP
 result_locA <- list()
@@ -55,7 +63,7 @@ val_locA <- colMeans(result_locA)
 
 ##rm on site NPP
 result_locN <- list()
-for(i in 1:30){
+for(i in 1:13){
   set.seed(i)
   rand_locN <- createDataPartition(srdbhl_locN$Rs_annual, p = 0.75, list = FALSE)
   train_locN <- srdbhl_locN[rand_locN,]
@@ -67,11 +75,13 @@ for(i in 1:30){
                         MAE = MAE(guess_locN, check_locN$Rs_annual))
   result_locN[[i]] <- data.frame(go_locN)
   #Plot use seed 13 because its closest to average
-  #Doesn't work I think bc train doesn't have a predict col
   if(i == 13){
-    valPlot <- ggplot(train_locN, aes(Rs_annual, valMod_locN)) +
-      geom_point()
-      #geom_point(check_locN, mapping = aes(Rs_annual, ))
+    train_locN$valMod_locN <- predict(valMod_locN) ^ 2
+    check_locN$guess_locN <- guess_locN ^ 2
+    valPlot_locN <- ggplot(train_locN, aes(Rs_annual, valMod_locN)) +
+      geom_point() +
+      geom_point(check_locN, mapping = aes(Rs_annual, guess_locN), color="red") +
+      geom_abline()
   }
 }
 result_locN <- bind_rows(result_locN)

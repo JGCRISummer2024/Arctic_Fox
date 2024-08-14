@@ -90,9 +90,15 @@ summary(rm_TP)
 #26.05%
 rm_sat <- lm(sqrt(Rs_annual) ~ modis + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_sat)
-srdbhl_sat <- srdb_hl %>% filter(!is.na(modis) & !is.na(OCS) & !is.na(Soil_drainage))
+#filtered out mixed soil drainage... fix this
+srdbhl_sat <- srdb_hl %>% filter(!is.na(modis) & !is.na(OCS) & !is.na(Soil_drainage) & Soil_drainage != "Mixed")
 srdbhl_sat$satModel <- predict(rm_sat) ^ 2
-sat_rp <- ggplot(srdbhl_sat, aes(Rs_annual, satModel)) + geom_point() + geom_abline()
+sat_rp <- ggplot(srdbhl_sat, aes(Rs_annual, satModel)) + 
+  geom_point() + 
+  geom_abline() +
+  xlab("Annual Rs (g C m^-2)") +
+  ylab("Model Prediction") +
+  ggtitle("MODIS Satellite Model")
 res_sat <- ggplot(srdbhl_sat, aes(satModel, Rs_annual-satModel)) +
   geom_point()
 
@@ -102,7 +108,12 @@ rm_locA <- lm(sqrt(Rs_annual) ~ ANPP + MAT_wc + MAP_wc + OCS + Soil_drainage + p
 summary(rm_locA)
 srdbhl_locA <- srdb_hl %>% filter(!is.na(ANPP) & !is.na(OCS) & !is.na(Soil_drainage))
 srdbhl_locA$locAModel <- predict(rm_locA) ^ 2
-locA_rp <- ggplot(srdbhl_locA, aes(Rs_annual, locAModel)) + geom_point() + geom_abline()
+locA_rp <- ggplot(srdbhl_locA, aes(Rs_annual, locAModel)) + 
+  geom_point() + 
+  geom_abline() +
+  xlab("Annual Rs (g C m^-2)") +
+  ylab("Model Prediction") +
+  ggtitle("On Site ANPP Model")
 res_locA <- ggplot(srdbhl_locA, aes(locAModel, Rs_annual-locAModel)) +
   geom_point()
 
@@ -135,7 +146,7 @@ res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
 #26.05
 rm_rem <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc + OCS + permafrost + modis + srad + Soil_drainage, data = srdb_hl)
 summary(rm_rem)
-srdb_hlf2 <- filter(srdb_hl, !is.na(MAT_wc) & !is.na(MAP_wc) & !is.na(OCS) & !is.na(Soil_drainage) & !is.na(modis))
+srdb_hlf2 <- filter(srdb_hl, !is.na(MAT_wc) & !is.na(MAP_wc) & !is.na(OCS) & !is.na(Soil_drainage) & !is.na(modis) & Soil_drainage != "")
 srdb_hlf2$model <- predict(rm_rem) ^2
 rp_rem <- ggplot(srdb_hlf2, aes(Rs_annual, model)) + geom_point() + geom_abline()
 res_rem <- ggplot(srdb_hlf2, aes(model, Rs_annual-model)) +

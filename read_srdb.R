@@ -1,3 +1,7 @@
+#Analysis of High Latitude of Soil Respiration
+#Erin Morrison
+#Summer 2024
+
 library(geodata)
 library(dplyr)
 library(ggplot2)
@@ -184,9 +188,194 @@ OCSmap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
   scale_color_gradientn(colors = rainbow(5))
 
 #### Linear Regression Models ####
+##Using sqrt(Rs_annual) for normal distribution
+##Single Variable Models
 
-#Normal distribution of srdb_hl
-srdbhl_norm <- ggplot(srdb_hl, aes(Rs_annual)) + geom_histogram()
-srdbhl_sqrt <- ggplot(srdb_hl, aes(sqrt(Rs_annual))) + geom_histogram()
-shapiro.test(srdb_hl$Rs_annual) #p-value = 3.336e-06 
-shapiro.test(sqrt(srdb_hl$Rs_annual)) #p-value = 0.03656 still not quite a normal distribution
+#MAT_wc: 13.06%
+rm_MAT <- lm(sqrt(Rs_annual) ~ MAT_wc, data = srdb_hl)
+summary(rm_MAT)
+
+#MAP_wc: 0.1734%
+rm_MAP <- lm(sqrt(Rs_annual) ~ MAP_wc, data = srdb_hl)
+summary(rm_MAP)
+
+#srad (solar radiation): 5.747%
+rm_srad <- lm(sqrt(Rs_annual) ~ srad, data = srdb_hl)
+summary(rm_srad)
+
+#OCS (organic carbon stock): 1.481%
+rm_OCS <- lm(sqrt(Rs_annual) ~ OCS, data = srdb_hl)
+summary(rm_OCS)
+
+#Soil_drainage: 14.02%
+rm_SD <- lm(sqrt(Rs_annual) ~ Soil_drainage, data = srdb_hl)
+summary(rm_SD)
+
+#Permafrost: 7.494%
+rm_perma <- lm(sqrt(Rs_annual) ~ permafrost, data = srdb_hl)
+summary(rm_perma)
+
+#Peatlands: -0.4264%
+rm_peat <- lm(sqrt(Rs_annual) ~ peatland, data = srdb_hl)
+summary(rm_peat)
+
+#NPP: 31.61%
+rm_NPP <- lm(sqrt(Rs_annual) ~ NPP, data = srdb_hl)
+summary(rm_NPP)
+
+#ANPP: 12.9%
+rm_ANPP <- lm(sqrt(Rs_annual) ~ ANPP, data = srdb_hl)
+summary(rm_ANPP)
+
+#MODIS ANPP: 7.788%
+rm_modis <- lm(sqrt(Rs_annual) ~ modis, data = srdb_hl)
+summary(rm_modis)
+
+##Multivariable Modesl
+
+#Local NPP: 69.73%
+rm_locN <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
+summary(rm_locN)
+srdbhl_locN <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(Soil_drainage))
+srdbhl_locN$locNModel <- predict(rm_locN) ^ 2
+locN_rp <- ggplot(srdbhl_locN, aes(Rs_annual, locNModel)) + geom_point() + geom_abline()
+res_locN <- ggplot(srdbhl_locN, aes(locNModel, Rs_annual-locNModel)) +
+  geom_point()
+
+#Local ANPP: 66.87%
+rm_locA <- lm(sqrt(Rs_annual) ~ ANPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
+summary(rm_locA)
+srdbhl_locA <- srdb_hl %>% filter(!is.na(ANPP) & !is.na(OCS) & !is.na(Soil_drainage))
+srdbhl_locA$locAModel <- predict(rm_locA) ^ 2
+locA_rp <- ggplot(srdbhl_locA, aes(Rs_annual, locAModel)) + 
+  geom_point() + 
+  geom_abline() +
+  xlab("Annual Rs (g C m^-2)") +
+  ylab("Model Prediction") +
+  ggtitle("On Site ANPP Model")
+res_locA <- ggplot(srdbhl_locA, aes(locAModel, Rs_annual-locAModel)) +
+  geom_point()
+
+#MODIS Satellite ANPP: 26.05%
+rm_sat <- lm(sqrt(Rs_annual) ~ modis + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
+summary(rm_sat)
+srdbhl_sat <- srdb_hl %>% filter(!is.na(modis) & !is.na(OCS) & !is.na(Soil_drainage))
+srdbhl_sat$satModel <- predict(rm_sat) ^ 2
+sat_rp <- ggplot(srdbhl_sat, aes(Rs_annual, satModel)) + 
+  geom_point() + 
+  geom_abline() +
+  xlab("Annual Rs (g C m^-2)") +
+  ylab("Model Prediction") +
+  ggtitle("MODIS Satellite Model")
+res_sat <- ggplot(srdbhl_sat, aes(satModel, Rs_annual-satModel)) +
+  geom_point()
+
+#Info on NPP/ANPP models
+Anova(rm_sat)
+Anova(rm_locA)
+Anova(rm_locN)
+
+#Best Model: 71.84%
+srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na(Soil_drainage))
+rm_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_drainage + permafrost + srad, data = srdb_hl)
+summary(rm_best)
+srdb_hlf$bestModel <- predict(rm_best) ^2
+best_rp <- ggplot(srdb_hlf, aes(Rs_annual, bestModel)) + 
+  geom_point() + 
+  xlab("Actual Annual Rs") +
+  ylab("Model Estimate") +
+  geom_abline()
+res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
+  geom_point()
+
+#### Model Validation ####
+##k-fold validation
+
+##Local NPP
+result_locN <- list()
+for(i in 1:30){
+  set.seed(i)
+  rand_locN <- createDataPartition(srdbhl_locN$Rs_annual, p = 0.75, list = FALSE)
+  train_locN <- srdbhl_locN[rand_locN,]
+  check_locN <- srdbhl_locN[-rand_locN,]
+  valMod_locN <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = train_locN)
+  guess_locN <- predict(valMod_locN, check_locN)
+  go_locN <- data.frame(R2 = R2(guess_locN, check_locN$Rs_annual),
+                        RMSE = RMSE(guess_locN, check_locN$Rs_annual),
+                        MAE = MAE(guess_locN, check_locN$Rs_annual))
+  result_locN[[i]] <- data.frame(go_locN)
+  #Plot use seed 13 because its closest to average
+  if(i == 13){
+    train_locN$valMod_locN <- predict(valMod_locN) ^ 2
+    check_locN$guess_locN <- guess_locN ^ 2
+    valPlot_locN <- ggplot(train_locN, aes(Rs_annual, valMod_locN)) +
+      geom_point() +
+      geom_point(check_locN, mapping = aes(Rs_annual, guess_locN), color="red") +
+      geom_abline()
+  }
+}
+result_locN <- bind_rows(result_locN)
+val_locN <- colMeans(result_locN)
+
+##Local ANPP
+result_locA <- list()
+for(i in 1:30){
+  set.seed(i)
+  rand_locA <- createDataPartition(srdbhl_locA$Rs_annual, p = 0.75, list = FALSE)
+  train_locA <- srdbhl_locA[rand_locA,]
+  check_locA <- srdbhl_locA[-rand_locA,]
+  valMod_locA <- lm(sqrt(Rs_annual) ~ ANPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = train_locA)
+  guess_locA <- predict(valMod_locA, check_locA)
+  go_locA <- data.frame(R2 = R2(guess_locA, check_locA$Rs_annual),
+                        RMSE = RMSE(guess_locA, check_locA$Rs_annual),
+                        MAE = MAE(guess_locA, check_locA$Rs_annual))
+  result_locA[[i]] <- data.frame(go_locA)
+}
+result_locA <- bind_rows(result_locA)
+val_locA <- colMeans(result_locA)
+
+##MODIS Satellite ANPP
+result_sat <- list()
+#There is only one "Mixed" value in the whole data set for soil drainage so there is an error if it is in the check data
+srdbhl_sat <- srdbhl_sat %>% filter(Soil_drainage != "Mixed")
+for(i in 1:30){
+  set.seed(i)
+  rand_sat <- createDataPartition(srdbhl_sat$Rs_annual, p = 0.75, list = FALSE)
+  train_sat <- srdbhl_sat[rand_sat,]
+  check_sat <- srdbhl_sat[-rand_sat,]
+  valMod_sat <- lm(sqrt(Rs_annual) ~ MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + modis + srad, data = train_sat)
+  guess_sat <- predict(valMod_sat, check_sat)
+  go_sat <- data.frame(R2 = R2(guess_sat, check_sat$Rs_annual),
+                       RMSE = RMSE(guess_sat, check_sat$Rs_annual),
+                       MAE = MAE(guess_sat, check_sat$Rs_annual))
+  result_sat[[i]] <- data.frame(go_sat)
+  #Plot use seed 14 because its closest to average
+  if(i == 14){
+    train_sat$valMod_sat <- predict(valMod_sat) ^ 2
+    check_sat$guess_sat <- guess_sat ^ 2
+    valPlot_sat <- ggplot(train_sat, aes(Rs_annual, valMod_sat)) +
+      geom_point() +
+      geom_point(check_sat, mapping = aes(Rs_annual, guess_sat), color="red") +
+      geom_abline()
+  }
+}
+result_sat <- bind_rows(result_sat)
+val_sat <- colMeans(result_sat)
+
+##Best Model
+#Works but gives warning
+result_best <- list()
+for(i in 1:30){
+  set.seed(i)
+  rand_best <- createDataPartition(srdb_hlf$Rs_annual, p = 0.75, list = FALSE)
+  train_best <- srdb_hlf[rand_best,]
+  check_best <- srdb_hlf[-rand_best,]
+  valMod_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_drainage + permafrost + srad, data = train_best)
+  guess_best <- predict(valMod_best, check_best)
+  go_best <- data.frame(R2 = R2(guess_best, check_best$Rs_annual),
+                        RMSE = RMSE(guess_best, check_best$Rs_annual),
+                        MAE = MAE(guess_best, check_best$Rs_annual))
+  result_best[[i]] <- data.frame(go_best)
+}
+result_best <- bind_rows(result_best)
+val_best <- colMeans(result_best)

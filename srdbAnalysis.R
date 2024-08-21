@@ -11,19 +11,24 @@ library(car)
 library(caret)
 
 #### Get data ####
+
 #Soil Respiration Data Base
+#https://github.com/bpbond/srdb
 srdb <- read.csv("srdb-data.csv")
 srdb <- srdb %>% filter(!is.na(Longitude) & !is.na(Latitude))
 
 #WorldClim
+#https://www.worldclim.org/data/worldclim21.html
 tavg <- worldclim_global("tavg", 10, "worldclim_data/")
 prec <- worldclim_global("prec", 10, "worldclim_data/")
 srad <- worldclim_global("srad", 10, "worldclim_data/")
 
 #SoilGrids
+#https://www.dropbox.com/scl/fi/mqfo5d2lkf1nrrhmwgbhm/ocs_0-30cm_mean.tif?rlkey=lbicjeeum9s68205hch3tieni&e=1&st=bzv01nj6&dl=0
 soilgrids <- raster("ocs_0-30cm_mean.tif")
 
 #MODIS
+#https://neo.gsfc.nasa.gov/view.php?datasetId=MOD17A3H_Y_NPP
 modis <- terra::rast("MOD17A3H_Y_NPP_2023-01-01_rgb_3600x1800.TIFF")
 modis_clamp <- terra::clamp(modis, lower=1, upper=254, values=FALSE) #remove NA data (recorded as 255)
 
@@ -31,12 +36,13 @@ modis_clamp <- terra::clamp(modis, lower=1, upper=254, values=FALSE) #remove NA 
 permafrost <- terra::rast("PF_baseline.tif")
 
 #Peatlands
+#https://zenodo.org/records/5794336
 peatland <- terra::rast("Peat-ML_global_peatland_extent.nc")
 
-## Combine Data ##
+##Combine Data
 #WorldClim
-srdb_temp <- terra::extract(tavg, srdb[15:14])
-srdb$MAT_wc <- rowMeans(srdb_temp[-1]) #get year average
+srdb_tavg <- terra::extract(tavg, srdb[15:14])
+srdb$MAT_wc <- rowMeans(srdb_tavg[-1]) #get year average
 srdb_prec <- terra::extract(prec, srdb[15:14]) 
 srdb$MAP_wc <- rowSums(srdb_prec[-1]) #get cumulative year average
 srdb_srad <- terra::extract(srad, srdb[15:14])
@@ -52,40 +58,23 @@ srdb$permafrost <- srdb_permafrost$PF_baseline
 srdb$permafrost[is.na(srdb$permafrost[])] <- 0 #set NA values (which mean no permafrost) to 0
 
 #Peatlands
-srdbPeat <- terra::extract(peatland, srdb[15:14])
-srdb$peatland <- srdbPeat$PEATLAND_P
+srdb_peatland <- terra::extract(peatland, srdb[15:14])
+srdb$peatland <- srdb_peatland$PEATLAND_P
 
-## Filters for only cold high latitudes and chooses columns to focus on
+##Filters for only cold high latitudes and chooses columns to focus on
 srdb_hl <- srdb %>% 
   filter(Latitude >= 50 & MAT_wc <= 3 & Quality_flag != "Q13" & Quality_flag != "Q12" & Manipulation == "None" & !is.na(Rs_annual)) %>%
-  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, Soil_CN, NPP, C_soilmineral, ANPP, modis, permafrost, peatland)
+  dplyr::select(Country, Latitude, Longitude, Rs_annual, Rs_growingseason, MAP, MAT, MAT_wc, MAP_wc, srad, Soil_drainage, NPP, C_soilmineral, ANPP, modis, permafrost, peatland)
 
-#Combine srdb_hl with SoilGrids OCS (combining with full srdb takes way too long so I am only connecting to the high latitude set)
+#Combine srdb_hl with SoilGrids OCS (combining with full srdb takes too long)
 x_points <- SpatialPoints(srdb_hl[3:2], proj4string = CRS("+proj=longlat + datum=WGS84"))
 x_points <- spTransform(x_points, projection(soilgrids))
 srdb_hl$OCS <- raster::extract(soilgrids, x_points, buffer = 1000, fun = mean)
 
-#Improved plots on map
-#2
-m2 <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
-  geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = Country))
-
-#3 circumpolar
-m3 <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
-  coord_map("ortho") + 
-  scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
-  geom_point(srdb_hl, mapping = aes(Longitude, Latitude, color = Country))
-
-#MAP and MAT
-matVrsa <- ggplot(srdb_hl, aes(MAT, Rs_annual)) + geom_point() + geom_smooth()
-matVrsg <- ggplot(srdb_hl, aes(MAT, Rs_growingseason)) + geom_point() + geom_smooth()
-mapVrsa <- ggplot(srdb_hl, aes(MAP, Rs_annual)) + geom_point() + geom_smooth()
-mapvrsg <- ggplot(srdb_hl, aes(MAP, Rs_growingseason)) + geom_point() + geom_smooth()
-
 #Circumpolar annual respiration map
 RsMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
-  scale_y_continuous(breaks = seq(30, 90, by = 5), labels = NULL, lim = c(40, 90)) + #lim = c(40, 90) zooms in but makes edges messy
+  scale_y_continuous(breaks = seq(30, 90, by = 5), labels = NULL) + 
   geom_point(srdb_hl, mapping = aes(Longitude, Latitude, color = Rs_annual), size = 1) +
   scale_color_gradient(high = c("purple"), low = c("yellow", "salmon")) +
   xlab("") +
@@ -95,6 +84,7 @@ RsMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat,
   labs(color = "Annual Rs (g C m^-2)")
 
 #### Ancillary Data Maps & Graphs ####
+
 ##MODIS
 #World map
 modisMap <- ggplot() + 
@@ -138,10 +128,10 @@ peatMaphl <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=
 
 #WorldClim Temperature
 #maps world and circumpolar
-wTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+MATmap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAT_wc)) + 
   scale_color_gradient(low=c("purple", "blue", "cyan", "green"), high=c("yellow", "orange", "red"))
-hlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+MATmaphl <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
   xlab("") +
@@ -152,28 +142,28 @@ hlTM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, 
   theme(panel.grid.major = element_line(linewidth = 0.25, linetype = 'dashed', color = "darkgrey"), axis.ticks=element_blank()) +
   labs(color = "Degrees Celsius")
 #Graph MAT by MAT_wc
-tempCheck <- ggplot(srdb, aes(MAT, MAT_wc)) + 
+MATcheck <- ggplot(srdb, aes(MAT, MAT_wc)) + 
   geom_point() + 
   geom_point(data = srdb_hl, mapping = aes(MAT, MAT_wc), color="cyan") + 
   geom_abline() +
   xlab("Mean Annual Temperature SRDB") +
   ylab("Mean Annual Temperature WorldClim") +
   ggtitle("SRDB Temperature vs WorldClim Temperature")
-tempCheckhl <- ggplot(srdb_hl, aes(MAT, MAT_wc)) + geom_point() + geom_abline()
+MATcheckhl <- ggplot(srdb_hl, aes(MAT, MAT_wc)) + geom_point() + geom_abline()
 
 ##WorldClim Precipitation
 #maps world and circumpolar
-wPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+MAPmap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   geom_point(data = srdb, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 
   scale_color_gradientn(colors = rainbow(5))
-hlPM <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
+MAPmaphl <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
   coord_map("ortho") + 
   scale_y_continuous(breaks = seq(30, 90, by = 10), labels = NULL) +
   geom_point(data = srdb_hl, mapping = aes(Longitude, Latitude, color = MAP_wc)) + 
   scale_color_gradientn(colors = rainbow(5))
 #Graph MAP by MAP_wc
-percCheck <- ggplot(srdb, aes(MAP, MAP_wc)) + geom_point() + geom_abline()
-percCheckhl <- ggplot(srdb_hl, aes(MAP, MAP_wc)) + geom_point() + geom_abline()
+MAPcheck <- ggplot(srdb, aes(MAP, MAP_wc)) + geom_point() + geom_abline()
+MAPcheckhl <- ggplot(srdb_hl, aes(MAP, MAP_wc)) + geom_point() + geom_abline()
 
 ##WorldClim Solar Radiation
 sradMap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat, group=group)) + 
@@ -188,6 +178,7 @@ OCSmap <- ggplot() + geom_polygon(map_data("world"), mapping = aes(x=long, y=lat
   scale_color_gradientn(colors = rainbow(5))
 
 #### Linear Regression Models ####
+
 ##Using sqrt(Rs_annual) for normal distribution
 ##Single Variable Models
 
@@ -231,43 +222,43 @@ summary(rm_ANPP)
 rm_modis <- lm(sqrt(Rs_annual) ~ modis, data = srdb_hl)
 summary(rm_modis)
 
-##Multivariable Modesl
+##Multivariable Models
 
 #Local NPP: 69.73%
 rm_locN <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_locN)
 srdbhl_locN <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(Soil_drainage))
-srdbhl_locN$locNModel <- predict(rm_locN) ^ 2
-locN_rp <- ggplot(srdbhl_locN, aes(Rs_annual, locNModel)) + geom_point() + geom_abline()
-res_locN <- ggplot(srdbhl_locN, aes(locNModel, Rs_annual-locNModel)) +
+srdbhl_locN$model <- predict(rm_locN) ^ 2
+locN_rp <- ggplot(srdbhl_locN, aes(Rs_annual, model)) + geom_point() + geom_abline()
+locN_res <- ggplot(srdbhl_locN, aes(model, Rs_annual-model)) +
   geom_point()
 
 #Local ANPP: 66.87%
 rm_locA <- lm(sqrt(Rs_annual) ~ ANPP + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_locA)
 srdbhl_locA <- srdb_hl %>% filter(!is.na(ANPP) & !is.na(OCS) & !is.na(Soil_drainage))
-srdbhl_locA$locAModel <- predict(rm_locA) ^ 2
-locA_rp <- ggplot(srdbhl_locA, aes(Rs_annual, locAModel)) + 
+srdbhl_locA$model <- predict(rm_locA) ^ 2
+locA_rp <- ggplot(srdbhl_locA, aes(Rs_annual, model)) + 
   geom_point() + 
   geom_abline() +
   xlab("Annual Rs (g C m^-2)") +
   ylab("Model Prediction") +
   ggtitle("On Site ANPP Model")
-res_locA <- ggplot(srdbhl_locA, aes(locAModel, Rs_annual-locAModel)) +
+locA_res <- ggplot(srdbhl_locA, aes(model, Rs_annual-model)) +
   geom_point()
 
 #MODIS Satellite ANPP: 26.05%
 rm_sat <- lm(sqrt(Rs_annual) ~ modis + MAT_wc + MAP_wc + OCS + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_sat)
 srdbhl_sat <- srdb_hl %>% filter(!is.na(modis) & !is.na(OCS) & !is.na(Soil_drainage))
-srdbhl_sat$satModel <- predict(rm_sat) ^ 2
-sat_rp <- ggplot(srdbhl_sat, aes(Rs_annual, satModel)) + 
+srdbhl_sat$model <- predict(rm_sat) ^ 2
+sat_rp <- ggplot(srdbhl_sat, aes(Rs_annual, model)) + 
   geom_point() + 
   geom_abline() +
   xlab("Annual Rs (g C m^-2)") +
   ylab("Model Prediction") +
   ggtitle("MODIS Satellite Model")
-res_sat <- ggplot(srdbhl_sat, aes(satModel, Rs_annual-satModel)) +
+sat_res <- ggplot(srdbhl_sat, aes(model, Rs_annual-model)) +
   geom_point()
 
 #Info on NPP/ANPP models
@@ -276,16 +267,16 @@ Anova(rm_locA)
 Anova(rm_locN)
 
 #Best Model: 71.84%
-srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na(Soil_drainage))
 rm_best <- lm(sqrt(Rs_annual) ~ NPP + MAT_wc + MAP_wc + OCS + ANPP + Soil_drainage + permafrost + srad, data = srdb_hl)
 summary(rm_best)
-srdb_hlf$bestModel <- predict(rm_best) ^2
-best_rp <- ggplot(srdb_hlf, aes(Rs_annual, bestModel)) + 
+srdb_hlf <- srdb_hl %>% filter(!is.na(NPP) & !is.na(OCS) & !is.na(ANPP) & !is.na(Soil_drainage))
+srdb_hlf$model <- predict(rm_best) ^2
+best_rp <- ggplot(srdb_hlf, aes(Rs_annual, model)) + 
   geom_point() + 
   xlab("Actual Annual Rs") +
   ylab("Model Estimate") +
   geom_abline()
-res_best <- ggplot(srdb_hlf, aes(bestModel, Rs_annual-bestModel)) +
+best_res <- ggplot(srdb_hlf, aes(model, Rs_annual-model)) +
   geom_point()
 
 #### Model Validation ####
@@ -379,3 +370,4 @@ for(i in 1:30){
 }
 result_best <- bind_rows(result_best)
 val_best <- colMeans(result_best)
+

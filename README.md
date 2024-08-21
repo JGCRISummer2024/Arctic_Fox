@@ -1,2 +1,3 @@
 # Arctic_Fox
- High Latitude Soil Respiration
+ Analyzing drivers of high latitude soil respiration
+ Testing MODIS NPP estimates against locally collected NPP for Rs prediction
